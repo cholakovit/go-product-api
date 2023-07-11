@@ -1,5 +1,5 @@
 1. For running the project use the command (Git Bash):
- - gin --appPort 3000 -- immediate
+ - gin --appPort 3000 --immediate
 
 
 2. To test the Creating the product use:

@@ -12,16 +12,14 @@ import (
 )
 
 var (
-	product		models.Product
-	pmh				validationmsghandlers.ProductMsgHandler
+	product		*models.Product
+	pmh				*validationmsghandlers.ProductMsgHandler
+	wg 				sync.WaitGroup
 )
 
 type ProductControllers struct {}
 
 func (pc *ProductControllers) CreateProduct(c *gin.Context) {
-	var product *models.Product
-	var wg sync.WaitGroup
-
 	if err := c.ShouldBindJSON(&product); err != nil {
 		errMsg := pmh.ProductValidate(err)
 		c.JSON(http.StatusBadRequest, gin.H{"message": errMsg})
@@ -65,7 +63,6 @@ func (pc *ProductControllers) GetProducts(c *gin.Context) {
 		case err := <- errChan:
 			c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 	}
-
 }
 
 func (pc *ProductControllers) GetProductById(c *gin.Context) {
@@ -89,16 +86,11 @@ func (pc *ProductControllers) GetProductById(c *gin.Context) {
 			c.JSON(http.StatusOK, productById)
 		case err := <- errChan:
 			c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
-	}
-
-	
+	}	
 }
 
 func (pc *ProductControllers) UpdateProduct(c *gin.Context) {
 	id := c.Param("id")
-	var product models.Product
-	var wg sync.WaitGroup
-
 	if err := c.ShouldBindJSON(&product); err != nil {
 		errMsg := pmh.ProductValidate(err)
 		c.JSON(http.StatusBadRequest, gin.H{"message": errMsg})
@@ -108,7 +100,7 @@ func (pc *ProductControllers) UpdateProduct(c *gin.Context) {
 	wg.Add(1)
 	go func ()  {
 		defer wg.Done()
-		err := product.UpdateProductQuery(&id, &product)
+		err := product.UpdateProductQuery(&id, product)
 		if err != nil {
 			c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })
 			return
