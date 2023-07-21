@@ -1,8 +1,9 @@
-package controllers
+package handlers
 
 import (
 	"net/http"
 	"products/models"
+	"products/queries"
 	"products/validationMsgHandlers"
 
 	"sync"
@@ -17,9 +18,7 @@ var (
 	wg 				sync.WaitGroup
 )
 
-type ProductControllers struct {}
-
-func (pc *ProductControllers) CreateProduct(c *gin.Context) {
+func CreateProduct(c *gin.Context) {
 	if err := c.ShouldBindJSON(&product); err != nil {
 		errMsg := pmh.ProductValidate(err)
 		c.JSON(http.StatusBadRequest, gin.H{"message": errMsg})
@@ -30,7 +29,7 @@ func (pc *ProductControllers) CreateProduct(c *gin.Context) {
 	go func() {
 		defer wg.Done()
 
-		err := product.CreateProductQuery(product)
+		err := queries.CreateProductQuery(product)
 		if err != nil {
 			c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })
 			return
@@ -42,12 +41,12 @@ func (pc *ProductControllers) CreateProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "create product success"})
 }
 
-func (pc *ProductControllers) GetProducts(c *gin.Context) {
+func GetProducts(c *gin.Context) {
 	resultChan := make(chan []primitive.M)
 	errChan := make(chan error)
 	
 	go func ()  {
-		products, err := product.GetAllQuery()
+		products, err := queries.GetAllQuery()
 		if err != nil {
 			errChan <- err
 		} else {
@@ -65,13 +64,13 @@ func (pc *ProductControllers) GetProducts(c *gin.Context) {
 	}
 }
 
-func (pc *ProductControllers) GetProductById(c *gin.Context) {
+func GetProductById(c *gin.Context) {
 	id := c.Param("id")
 	resultChan := make(chan primitive.M)
 	errChan := make(chan error)
 
 	go func() {
-		productById, err := product.GetProductByIdQuery(&id)
+		productById, err := queries.GetProductByIdQuery(&id)
 		if err != nil {
 			errChan <- err
 		}else {
@@ -89,7 +88,7 @@ func (pc *ProductControllers) GetProductById(c *gin.Context) {
 	}	
 }
 
-func (pc *ProductControllers) UpdateProduct(c *gin.Context) {
+func UpdateProduct(c *gin.Context) {
 	id := c.Param("id")
 	if err := c.ShouldBindJSON(&product); err != nil {
 		errMsg := pmh.ProductValidate(err)
@@ -100,7 +99,7 @@ func (pc *ProductControllers) UpdateProduct(c *gin.Context) {
 	wg.Add(1)
 	go func ()  {
 		defer wg.Done()
-		err := product.UpdateProductQuery(&id, product)
+		err := queries.UpdateProductQuery(&id, product)
 		if err != nil {
 			c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })
 			return
@@ -111,14 +110,14 @@ func (pc *ProductControllers) UpdateProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "update product success"})
 }
 
-func (pc *ProductControllers) DeleteProduct(c *gin.Context) {
+func DeleteProduct(c *gin.Context) {
 	id := c.Param("id")
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go func ()  {
 		defer wg.Done()
-		err := product.DeleteProductQuery(&id)
+		err := queries.DeleteProductQuery(&id)
 		if err != nil {
 			c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })
 			return

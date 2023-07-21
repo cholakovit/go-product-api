@@ -3,13 +3,9 @@ package routes
 import (
 	"log"
 	"os"
-	"products/controllers"
+	"products/handlers"
 
 	"github.com/gin-gonic/gin"
-)
-
-var(
-	pc		controllers.ProductControllers
 )
 
 type Routes struct {
@@ -29,9 +25,9 @@ func (r *Routes) InitRoutes() {
 }
 
 func (r *Routes) ProductRoutes(router *gin.Engine) {
-	router.GET("/products", pc.GetProducts)
-	router.POST("/products", pc.CreateProduct)
-	router.GET("/products/:id", pc.GetProductById)
-	router.PATCH("/products/:id", pc.UpdateProduct)
-	router.DELETE("/products/:id", pc.DeleteProduct)
+	router.GET("/products", handlers.GetProducts)
+	router.POST("/products", handlers.CreateProduct)
+	router.GET("/products/:id", handlers.GetProductById)
+	router.PATCH("/products/:id", handlers.UpdateProduct)
+	router.DELETE("/products/:id", handlers.DeleteProduct)
 }
