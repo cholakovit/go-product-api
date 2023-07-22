@@ -15,17 +15,6 @@ import (
 
 var collection *mongo.Collection = db.OpenCollection(db.Client, "products")
 
-func CreateProductQuery(product *models.Product) error {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
-	defer cancel()
-	
-	_, err := collection.InsertOne(ctx, product)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return err
-}
-
 func GetAllQuery() ([]primitive.M, error) {
 	var products []primitive.M
 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
@@ -50,6 +39,17 @@ func GetAllQuery() ([]primitive.M, error) {
 	}
 
 	return products, nil
+}
+
+func CreateProductQuery(product *models.Product) error {
+	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
+	defer cancel()
+	
+	_, err := collection.InsertOne(ctx, product)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return err
 }
 
 func DeleteProductQuery(id *string) error {
