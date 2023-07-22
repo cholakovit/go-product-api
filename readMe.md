@@ -34,3 +34,15 @@
   "created_at": "2023-07-21T12:34:56Z",
   "updated_at": "2023-07-21T12:34:56Z"
 }
+
+4. To test creating category use:
+{
+  "_id": "64bb773b44ff8c185d829948",
+  "category_id": "1",
+  "created_at": "2023-07-21T12:34:56Z",
+  "desc": "lorem ipsum",
+  "tags": "lorem, ipsum",
+  "title": "category 1 UPDATED",
+  "updated_at": "2023-07-21T12:34:56Z",
+  "user_id": "1"
+}

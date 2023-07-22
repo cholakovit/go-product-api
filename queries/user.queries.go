@@ -17,6 +17,32 @@ import (
 
 var userCollection *mongo.Collection = db.OpenCollection(db.Client, "users")
 
+func GetUsersQuery() ([]primitive.M, error) {
+	var users []primitive.M
+	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
+	defer cancel()
+
+	cursor, err := userCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if err = cursor.All(ctx, &users); err != nil {
+		return nil, err
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(users) == 0 {
+		return nil, errors.New("documents not found")
+	}
+
+	return users, nil
+}
+
 func CreateUserQuery(user *models.User) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
 	defer cancel()
@@ -29,7 +55,25 @@ func CreateUserQuery(user *models.User) error {
 	return err
 }
 
-func UpdateUserQuery(id *string, user *models.User) error {
+func GetUserByIdQuery(id *string) (primitive.M, error) {
+	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
+	defer cancel()
+	var user bson.M
+	
+	primitiveId, _ := primitive.ObjectIDFromHex(*id)
+
+	query := bson.D{primitive.E{Key: "_id", Value: primitiveId}}
+
+	userCollection.FindOne(ctx, query).Decode(&user)
+
+	if len(user) == 0 {
+		return nil, errors.New("product not found")
+	}
+
+	return user, nil
+}
+
+func UpdateUserByIdQuery(id *string, user *models.User) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
 	defer cancel()
 
@@ -58,7 +102,7 @@ func UpdateUserQuery(id *string, user *models.User) error {
 	return nil
 }
 
-func DeleteUserQuery(id *string) error {
+func DeleteUserByIdQuery(id *string) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
 	defer cancel()
 
@@ -76,48 +120,4 @@ func DeleteUserQuery(id *string) error {
 	}
 
 	return nil
-}
-
-func GetUserByIdQuery(id *string) (primitive.M, error) {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
-	defer cancel()
-	var user bson.M
-	
-	primitiveId, _ := primitive.ObjectIDFromHex(*id)
-
-	query := bson.D{primitive.E{Key: "_id", Value: primitiveId}}
-
-	userCollection.FindOne(ctx, query).Decode(&user)
-
-	if len(user) == 0 {
-		return nil, errors.New("product not found")
-	}
-
-	return user, nil
-}
-
-func GetAllUsersQuery() ([]primitive.M, error) {
-	var users []primitive.M
-	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
-	defer cancel()
-
-	cursor, err := userCollection.Find(ctx, bson.M{})
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	if err = cursor.All(ctx, &users); err != nil {
-		return nil, err
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(users) == 0 {
-		return nil, errors.New("documents not found")
-	}
-
-	return users, nil
 }

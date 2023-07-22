@@ -7,9 +7,9 @@ import (
 )
 
 func UserRoutes(router *gin.Engine) {
-	router.POST("/user", handlers.CreateUser)
-	router.PATCH("/user/:id", handlers.UpdateUser)
-	router.DELETE("/user/:id", handlers.DeleteUser)
-	router.GET("/user/:id", handlers.GetUserById)
 	router.GET("/users", handlers.GetUsers)
+	router.POST("/user", handlers.CreateUser)
+	router.GET("/user/:id", handlers.GetUserById)
+	router.PATCH("/user/:id", handlers.UpdateUserById)
+	router.DELETE("/user/:id", handlers.DeleteUserById)
 }

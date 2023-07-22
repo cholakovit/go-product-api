@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"products/models"
 
@@ -12,13 +11,22 @@ import (
 
 var user *models.User
 
+func GetUsers(c *gin.Context) {
+	users, err := queries.GetUsersQuery()
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+	}	
+
+	c.JSON(http.StatusOK, users)
+}
+
 func CreateUser(c *gin.Context) {
   
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	fmt.Println("CreateUser")
+
 	err := queries.CreateUserQuery(user)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })
@@ -26,34 +34,6 @@ func CreateUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "create user success"})
-}
-
-func UpdateUser(c *gin.Context) {
-	id := c.Param("id")
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	err := queries.UpdateUserQuery(&id, user)
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "update user success"})
-}
-
-func DeleteUser(c *gin.Context) {
-	id := c.Param("id")
-
-	err := queries.DeleteUserQuery(&id)
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "delete user success"})
 }
 
 func GetUserById(c *gin.Context) {
@@ -67,11 +47,30 @@ func GetUserById(c *gin.Context) {
 	c.JSON(http.StatusOK, productById)
 }
 
-func GetUsers(c *gin.Context) {
-	users, err := queries.GetAllUsersQuery()
+func UpdateUserById(c *gin.Context) {
+	id := c.Param("id")
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err := queries.UpdateUserByIdQuery(&id, user)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
-	}	
+		return
+	}
 
-	c.JSON(http.StatusOK, users)
+	c.JSON(http.StatusOK, gin.H{"message": "update user success"})
+}
+
+func DeleteUserById(c *gin.Context) {
+	id := c.Param("id")
+
+	err := queries.DeleteUserByIdQuery(&id)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "delete user success"})
 }

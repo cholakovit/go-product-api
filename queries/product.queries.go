@@ -15,7 +15,7 @@ import (
 
 var collection *mongo.Collection = db.OpenCollection(db.Client, "products")
 
-func GetAllQuery() ([]primitive.M, error) {
+func GetProductsQuery() ([]primitive.M, error) {
 	var products []primitive.M
 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
 	defer cancel()
@@ -52,26 +52,6 @@ func CreateProductQuery(product *models.Product) error {
 	return err
 }
 
-func DeleteProductQuery(id *string) error {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
-	defer cancel()
-
-	// ID of the document to delete
-	primitiveId, err := primitive.ObjectIDFromHex(*id)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	filter := bson.M{"_id": primitiveId}
-
-	result, _ := collection.DeleteOne(ctx, filter)
-	if result.DeletedCount != 1 {
-		return errors.New("no matched document found for delete")
-	}
-
-	return nil
-}
-
 func GetProductByIdQuery(id *string) (primitive.M, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
 	defer cancel()
@@ -90,7 +70,7 @@ func GetProductByIdQuery(id *string) (primitive.M, error) {
 	return product, nil
 }
 
-func UpdateProductQuery(id *string, product *models.Product) error {
+func UpdateProductByIdQuery(id *string, product *models.Product) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
 	defer cancel()
 	
@@ -121,6 +101,26 @@ func UpdateProductQuery(id *string, product *models.Product) error {
 	result, _ := collection.UpdateOne(ctx, filter,update)
 	if result.MatchedCount != 1 {
 		return errors.New("no matched prroduct found for update")
+	}
+
+	return nil
+}
+
+func DeleteProductByIdQuery(id *string) error {
+	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
+	defer cancel()
+
+	// ID of the document to delete
+	primitiveId, err := primitive.ObjectIDFromHex(*id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	filter := bson.M{"_id": primitiveId}
+
+	result, _ := collection.DeleteOne(ctx, filter)
+	if result.DeletedCount != 1 {
+		return errors.New("no matched document found for delete")
 	}
 
 	return nil
