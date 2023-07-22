@@ -21,3 +21,16 @@
     "thumb5": "test.webp"
   }
 }
+
+3. To test creating user use:
+{
+  "full_name": "spas cholakov",
+  "pass": "1234",
+  "email": "aaa@abv.bg",
+  "phone": "123123",
+  "role": "user",
+  "token": "",
+  "rtoken": "",
+  "created_at": "2023-07-21T12:34:56Z",
+  "updated_at": "2023-07-21T12:34:56Z"
+}
