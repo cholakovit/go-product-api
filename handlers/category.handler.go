@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"products/models"
 	"products/queries"
+	vs "products/validationMessages"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,16 +15,16 @@ func GetCategories(c *gin.Context) {
 	categories, err := queries.GetCategoiesQuery()
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		return
 	}
-
-	fmt.Println("GetCategories", categories)
 
 	c.JSON(http.StatusOK, categories)
 }
 
 func CreateCategory(c *gin.Context) {
 	if err := c.ShouldBindJSON(&category); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		errMsg := vs.CategoryMessageValidate(err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": errMsg})
 		return
 	}
 
@@ -43,6 +43,7 @@ func GetCategoryById(c *gin.Context) {
 	categoryById, err := queries.GetCategoryByIdQuery(&id)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, categoryById)
@@ -51,7 +52,9 @@ func GetCategoryById(c *gin.Context) {
 func UpdateCategoryById(c *gin.Context) {
 	id := c.Param("id")
 	if err := c.ShouldBindJSON(&category); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		errMsg := vs.CategoryMessageValidate(err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": errMsg})
+		return
 	}
 
 	err := queries.UpdateCategoryByIdQuery(&id, category)

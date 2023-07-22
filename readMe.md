@@ -19,7 +19,9 @@
     "thumb3": "test.webp",
     "thumb4": "test.webp",
     "thumb5": "test.webp"
-  }
+  },
+  "user_id": "1",
+  "category_id": "1"
 }
 
 3. To test creating user use:
