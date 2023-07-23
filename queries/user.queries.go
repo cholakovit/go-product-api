@@ -121,3 +121,29 @@ func DeleteUserByIdQuery(id *string) error {
 
 	return nil
 }
+
+func FindUserByEmailQuery(email *string) (int64, error) {
+	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
+	defer cancel()
+
+	count, err := userCollection.CountDocuments(ctx, bson.M{"email": email})
+
+	if err != nil {
+		return 0, errors.New("error occuring while checking for the user")
+	}
+
+	return count, nil
+}
+
+func FindOneQuery(user *models.Auth) (*models.User, error) {
+	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
+	defer cancel()
+
+	var foundUser models.User
+	err := userCollection.FindOne(ctx, bson.M{"email":user.Email}).Decode(&foundUser)
+	if err != nil {
+		return nil, errors.New("error occuring while checking for the user")
+	}
+
+	return &foundUser, err
+}

@@ -13,6 +13,7 @@ func InitRoutes() {
 	ProductRoutes(router)
 	UserRoutes(router)
 	CategoryRoutes(router)
+	AuthRoutes(router)
 
 	port := os.Getenv("PORT")
 	if port == "" {

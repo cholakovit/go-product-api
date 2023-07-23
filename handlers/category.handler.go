@@ -5,6 +5,7 @@ import (
 	"products/models"
 	"products/queries"
 	vs "products/validationMessages"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,6 +28,9 @@ func CreateCategory(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": errMsg})
 		return
 	}
+
+	category.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	category.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	err := queries.CreateCategoryQuery(category)
 	if err != nil {
@@ -56,6 +60,8 @@ func UpdateCategoryById(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": errMsg})
 		return
 	}
+
+	category.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	err := queries.UpdateCategoryByIdQuery(&id, category)
 	if err != nil {

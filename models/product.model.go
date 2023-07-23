@@ -1,7 +1,9 @@
 package models
 
 import (
-	 "go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Product struct {
@@ -18,6 +20,8 @@ type Product struct {
 	Thumbs       Thumbs             `json:"thumbs"															bson:"thumbs"`
 	Category_id	 string							`json:"category_id"													bson:"category_id"`
 	User_id			 string							`json:"user_id"															bson:"user_id"`
+	Created_at	 time.Time					`json:"created_at"													bson:"created_at"`
+	Updated_at	 time.Time					`json:"updated_at"													bson:"updated_at"`
 }
 
 type Thumbs struct {

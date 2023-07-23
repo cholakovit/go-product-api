@@ -5,6 +5,7 @@ import (
 	"products/models"
 	"products/queries"
 	vs "products/validationMessages"
+	"time"
 
 	"sync"
 
@@ -50,6 +51,9 @@ func CreateProduct(c *gin.Context) {
 	wg.Add(1)	
 	go func() {
 		defer wg.Done()
+
+		product.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		product.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 		err := queries.CreateProductQuery(product)
 		if err != nil {
@@ -98,6 +102,9 @@ func UpdateProductById(c *gin.Context) {
 	wg.Add(1)
 	go func ()  {
 		defer wg.Done()
+
+		product.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		
 		err := queries.UpdateProductByIdQuery(&id, product)
 		if err != nil {
 			c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })

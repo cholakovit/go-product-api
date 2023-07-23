@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"net/http"
+	"products/helpers"
 	"products/models"
 	"products/queries"
 	vs "products/validationMessages"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +30,28 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	err := queries.CreateUserQuery(user)
+	count, err := queries.FindUserByEmailQuery(user.Email)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "this email is taken"})
+		return
+	}
+
+	token, refreshToken, _ := helpers.GenerateToken(user)
+
+	user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+	user.Token = &token
+	user.Rtoken = &refreshToken
+
+	pass := helpers.HashPassword(*user.Pass)
+	user.Pass = &pass
+
+	err = queries.CreateUserQuery(user)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })
 		return
@@ -55,6 +78,8 @@ func UpdateUserById(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": errMsg})
 		return
 	}
+
+	user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	err := queries.UpdateUserByIdQuery(&id, user)
 	if err != nil {
