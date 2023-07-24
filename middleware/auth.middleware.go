@@ -11,6 +11,9 @@ import (
 func Auth(c *gin.Context) {
 
 	token := c.Request.Header.Get("token")
+
+	fmt.Println("AUTH TOKEN: ", token)
+
 	if token == ""{
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("No Authorization header provided")})
 		c.Abort()

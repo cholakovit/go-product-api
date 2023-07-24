@@ -6,7 +6,7 @@
 {
   "title": "new test product",
   "img": "testImage.webp",
-  "desc": "lorem ipsum desc",
+  "desc": "lorem ipsum desc, lorem ipsum desc, lorem ipsum desc",
   "short_desc": "lorem ipsum short desc",
   "price": 10,
   "discount": 2,
@@ -38,13 +38,10 @@
 }
 
 4. To test creating category use:
-{
-  "_id": "64bb773b44ff8c185d829948",
-  "category_id": "1",
-  "created_at": "2023-07-21T12:34:56Z",
-  "desc": "lorem ipsum",
-  "tags": "lorem, ipsum",
-  "title": "category 1 UPDATED",
-  "updated_at": "2023-07-21T12:34:56Z",
-  "user_id": "1"
-}
+  {
+    "title": "category 2",
+    "desc": "lorem ipsum 2",
+    "tags": "lorem, ipsum 2",
+    "user_id": "1",
+    "category_id": "1"
+  }
