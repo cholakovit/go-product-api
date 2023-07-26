@@ -30,14 +30,9 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	count, err := queries.FindUserByEmailQuery(user.Email)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if count > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "this email is taken"})
+	emailMsg := helpers.VerifyEmail(&user.Email)
+	if emailMsg != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": emailMsg})
 		return
 	}
 
@@ -45,13 +40,13 @@ func CreateUser(c *gin.Context) {
 
 	user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	user.Token = &token
-	user.Rtoken = &refreshToken
+	user.Token = token
+	user.Rtoken = refreshToken
 
-	pass := helpers.HashPassword(*user.Pass)
-	user.Pass = &pass
+	pass := helpers.HashPassword(user.Pass)
+	user.Pass = pass
 
-	err = queries.CreateUserQuery(user)
+	err := queries.CreateUserQuery(user)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{ "message": err.Error() })
 		return
@@ -63,12 +58,12 @@ func CreateUser(c *gin.Context) {
 func GetUserById(c *gin.Context) {
 	id := c.Param("id")
 
-	productById, err := queries.GetUserByIdQuery(&id)
+	userById, err := queries.GetUserByIdQuery(&id)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, productById)
+	c.JSON(http.StatusOK, userById)
 }
 
 func UpdateUserById(c *gin.Context) {
@@ -79,9 +74,22 @@ func UpdateUserById(c *gin.Context) {
 		return
 	}
 
+	userById, err := queries.GetUserByIdQuery(&id)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+	}
+
+	if user.Email != userById.Email {
+		isValidEmail := helpers.VerifyEmail(&user.Email)
+		if isValidEmail != "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": isValidEmail})
+			return		
+		}
+	} 
+
 	user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-	err := queries.UpdateUserByIdQuery(&id, user)
+	err = queries.UpdateUserByIdQuery(&id, user)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return

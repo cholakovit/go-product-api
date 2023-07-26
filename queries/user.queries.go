@@ -55,23 +55,40 @@ func CreateUserQuery(user *models.User) error {
 	return err
 }
 
-func GetUserByIdQuery(id *string) (primitive.M, error) {
+func GetUserByIdQuery(id *string) (*models.User, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
 	defer cancel()
-	var user bson.M
+	var user *models.User
 	
-	primitiveId, _ := primitive.ObjectIDFromHex(*id)
+	primitiveID, _ := primitive.ObjectIDFromHex(*id)
 
-	query := bson.D{primitive.E{Key: "_id", Value: primitiveId}}
+	query := bson.D{primitive.E{Key: "_id", Value: primitiveID}}
 
-	userCollection.FindOne(ctx, query).Decode(&user)
-
-	if len(user) == 0 {
-		return nil, errors.New("product not found")
+	err := userCollection.FindOne(ctx, query).Decode(&user)
+	if err != nil {
+		return nil, err
 	}
 
 	return user, nil
 }
+
+// func GetUserByIdQuery(id *string) (primitive.M, error) {
+// 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
+// 	defer cancel()
+// 	var user bson.M
+	
+// 	primitiveId, _ := primitive.ObjectIDFromHex(*id)
+
+// 	query := bson.D{primitive.E{Key: "_id", Value: primitiveId}}
+
+// 	userCollection.FindOne(ctx, query).Decode(&user)
+
+// 	if len(user) == 0 {
+// 		return nil, errors.New("user not found")
+// 	}
+
+// 	return user, nil
+// }
 
 func UpdateUserByIdQuery(id *string, user *models.User) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
@@ -92,7 +109,7 @@ func UpdateUserByIdQuery(id *string, user *models.User) error {
 		bson.E{ Key: "updated_at", Value: user.Updated_at },
 	} }}
 
-	fmt.Println("FullName", *user.FullName)
+	fmt.Println("FullName", user.FullName)
 
 	result, _ := userCollection.UpdateOne(ctx, filter, update)
 	if result.MatchedCount != 1 {

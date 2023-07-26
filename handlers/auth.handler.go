@@ -23,7 +23,7 @@ func SignIn(c *gin.Context) {
 		return
 	}
 
-	passwordIsValid, msg := helpers.VerifyPassword(*auth.Pass, *foundUser.Pass)
+	passwordIsValid, msg := helpers.VerifyPassword(*auth.Pass, foundUser.Pass)
 	if passwordIsValid != true {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
