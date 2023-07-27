@@ -13,7 +13,7 @@ import (
 var category *models.Category
 
 func GetCategories(c *gin.Context) {
-	categories, err := queries.GetCategoiesQuery()
+	categories, err := queries.GetCategoriesQuery()
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return

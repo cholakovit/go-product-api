@@ -3,9 +3,9 @@ package queries
 import (
 	"context"
 	"errors"
-	"log"
 	"products/db"
 	"products/models"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,11 +13,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var collection *mongo.Collection = db.OpenCollection(db.Client, "products")
+var (
+	collection *mongo.Collection = db.OpenCollection(db.Client, "products")
+	wg 				sync.WaitGroup
+)
 
 func GetProductsQuery() ([]primitive.M, error) {
-	var products []primitive.M
-	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
+	//var products []primitive.M
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
 	cursor, err := collection.Find(ctx, bson.M{})
@@ -26,102 +29,198 @@ func GetProductsQuery() ([]primitive.M, error) {
 	}
 	defer cursor.Close(ctx)
 
-	if err = cursor.All(ctx, &products); err != nil {
+	// Create a channel to receive the fetched products from goroutines
+	productChan := make(chan []primitive.M)
+
+	go func() {
+		var fetchedProducts []primitive.M
+		for cursor.Next(ctx) {
+			var product primitive.M
+			err := cursor.Decode(&product)
+			if err != nil {
+				break
+			}
+			fetchedProducts = append(fetchedProducts, product)
+		}
+		productChan <- fetchedProducts
+	}()
+
+	// Wait for the products to be fetched from the goroutine
+	fetchedProducts := <-productChan
+
+	if err := cursor.Err(); err != nil {
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, err
+	if len(fetchedProducts) == 0 {
+		return nil, errors.New("products not found")
 	}
 
-	if len(products) == 0 {
-		return nil, errors.New("documents not found")
-	}
-
-	return products, nil
+	return fetchedProducts, nil
 }
 
 func CreateProductQuery(product *models.Product) error {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
+	var wg sync.WaitGroup // To wait for goroutine to complete
+	var resultErr error   // To store the error from the database operation
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
-	
-	_, err := collection.InsertOne(ctx, product)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return err
+
+	wg.Add(1)
+	go func() {
+			defer wg.Done()
+			_, err := collection.InsertOne(ctx, product)
+			if err != nil {
+					resultErr = err
+			}
+	}()
+
+	wg.Wait() // Wait for the goroutine to finish
+	return resultErr
 }
 
 func GetProductByIdQuery(id *string) (primitive.M, error) {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
-	defer cancel()
 	var product bson.M
-	
-	primitiveId, _ := primitive.ObjectIDFromHex(*id)
 
-	query := bson.D{primitive.E{Key: "_id", Value: primitiveId}}
+	// Create a channel to receive the result
+	resultChan := make(chan primitive.M)
+	errChan := make(chan error)
 
-	collection.FindOne(ctx, query).Decode(&product)
+	go func() {
+			// Perform the database operation asynchronously
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+			defer cancel()
 
-	if len(product) == 0 {
-		return nil, errors.New("product not found")
+			primitiveId, err := primitive.ObjectIDFromHex(*id)
+			if err != nil {
+					errChan <- err
+					return
+			}
+
+			query := bson.D{primitive.E{Key: "_id", Value: primitiveId}}
+
+			err = collection.FindOne(ctx, query).Decode(&product)
+			if err != nil {
+					errChan <- err
+					return
+			}
+
+			resultChan <- product
+	}()
+
+	// Wait for either the result or an error
+	select {
+		case product := <-resultChan:
+				if len(product) == 0 {
+						return nil, errors.New("product not found")
+				}
+				return product, nil
+
+		case err := <-errChan:
+				return nil, err
 	}
-
-	return product, nil
 }
 
 func UpdateProductByIdQuery(id *string, product *models.Product) error {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
-	defer cancel()
-	
-	primitiveId, _ := primitive.ObjectIDFromHex(*id)
-	filter := bson.D{primitive.E{Key: "_id", Value: primitiveId}}
+	//var err error
 
-	update := bson.D{bson.E{ Key: "$set", Value: bson.D {
-		bson.E{ Key: "title", Value: product.Title },
-		bson.E{ Key: "desc", Value: product.Desc },
-		bson.E{ Key: "img", Value: product.Img },
-		bson.E{ Key: "short_desc", Value: product.Short_Desc },
-		bson.E{ Key: "manufacturer", Value: product.Manufacturer },
-		bson.E{ Key: "price", Value: product.Price },
-		bson.E{ Key: "stock", Value: product.Stock },
-		bson.E{ Key: "discount", Value: product.Discount },
-		bson.E{ Key: "active", Value: product.Active },
-		//bson.E{ Key: "thumbs", Value: product.Thumbs},
-		bson.E{ Key: "thumbs", Value: bson.D{
-			bson.E{Key: "thumb1", Value: product.Thumbs.Thumb1},
-			bson.E{Key: "thumb2", Value: product.Thumbs.Thumb2},
-			bson.E{Key: "thumb3", Value: product.Thumbs.Thumb3},
-			bson.E{Key: "thumb4", Value: product.Thumbs.Thumb4},
-			bson.E{Key: "thumb5", Value: product.Thumbs.Thumb5},
-		} },
+	// Create a channel to receive the update result
+	resultChan := make(chan int64)
+	errChan := make(chan error)
 
-	} }}
+	go func() {
+			// Perform the database update asynchronously
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+			defer cancel()
 
-	result, _ := collection.UpdateOne(ctx, filter,update)
-	if result.MatchedCount != 1 {
-		return errors.New("no matched prroduct found for update")
+			primitiveId, err := primitive.ObjectIDFromHex(*id)
+			if err != nil {
+					errChan <- err
+					return
+			}
+
+			filter := bson.D{primitive.E{Key: "_id", Value: primitiveId}}
+
+			update := bson.D{bson.E{Key: "$set", Value: bson.D{
+					bson.E{Key: "title", Value: product.Title},
+					bson.E{Key: "desc", Value: product.Desc},
+					bson.E{Key: "img", Value: product.Img},
+					bson.E{Key: "short_desc", Value: product.Short_Desc},
+					bson.E{Key: "manufacturer", Value: product.Manufacturer},
+					bson.E{Key: "price", Value: product.Price},
+					bson.E{Key: "stock", Value: product.Stock},
+					bson.E{Key: "discount", Value: product.Discount},
+					bson.E{Key: "active", Value: product.Active},
+					bson.E{Key: "thumbs", Value: bson.D{
+							bson.E{Key: "thumb1", Value: product.Thumbs.Thumb1},
+							bson.E{Key: "thumb2", Value: product.Thumbs.Thumb2},
+							bson.E{Key: "thumb3", Value: product.Thumbs.Thumb3},
+							bson.E{Key: "thumb4", Value: product.Thumbs.Thumb4},
+							bson.E{Key: "thumb5", Value: product.Thumbs.Thumb5},
+					}},
+			}}}
+
+			result, err := collection.UpdateOne(ctx, filter, update)
+			if err != nil {
+					errChan <- err
+					return
+			}
+
+			resultChan <- result.MatchedCount
+	}()
+
+	// Wait for either the result or an error
+	select {
+	case matchedCount := <-resultChan:
+			if matchedCount != 1 {
+					return errors.New("no matched product found for update")
+			}
+			return nil
+
+	case err := <-errChan:
+			return err
 	}
-
-	return nil
 }
 
 func DeleteProductByIdQuery(id *string) error {
-	var ctx, cancel = context.WithTimeout(context.Background(), 100 * time.Second)
-	defer cancel()
+	//var err error
 
-	// ID of the document to delete
-	primitiveId, err := primitive.ObjectIDFromHex(*id)
-	if err != nil {
-		log.Fatal(err)
+	// Create a channel to receive the delete result
+	resultChan := make(chan int64)
+	errChan := make(chan error)
+
+	go func() {
+			// Perform the delete operation asynchronously
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+			defer cancel()
+
+			// ID of the document to delete
+			primitiveId, err := primitive.ObjectIDFromHex(*id)
+			if err != nil {
+					errChan <- err
+					return
+			}
+
+			filter := bson.M{"_id": primitiveId}
+
+			result, err := collection.DeleteOne(ctx, filter)
+			if err != nil {
+					errChan <- err
+					return
+			}
+
+			resultChan <- result.DeletedCount
+	}()
+
+	// Wait for either the result or an error
+	select {
+	case deletedCount := <-resultChan:
+			if deletedCount != 1 {
+					return errors.New("no matched document found for delete")
+			}
+			return nil
+
+	case err := <-errChan:
+			return err
 	}
-
-	filter := bson.M{"_id": primitiveId}
-
-	result, _ := collection.DeleteOne(ctx, filter)
-	if result.DeletedCount != 1 {
-		return errors.New("no matched document found for delete")
-	}
-
-	return nil
 }
